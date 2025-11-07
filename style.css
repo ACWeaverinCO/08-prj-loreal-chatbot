@@ -6,12 +6,12 @@
 }
 
 :root {
-  /* L'Oréal-inspired palette */
-  --loreal-black: #0b0b0b; /* primary brand black */
-  --loreal-gold: #c7a252; /* warm gold accent */
-  --loreal-muted: #6b6b6b; /* secondary text */
-  --loreal-bg: #faf9f7; /* soft off-white background */
-  --card-bg: #ffffff;
+  /* L'Oréal official-inspired palette */
+  --loreal-black: #000000; /* pure brand black for strong typography */
+  --loreal-gold: #b38b3b; /* warm luxury gold (futurebrand/L'Oréal feel) */
+  --loreal-muted: #757575; /* elegant neutral for secondary text */
+  --loreal-bg: #f7f6f4; /* very soft warm off-white */
+  --card-bg: #ffffff; /* white cards */
 }
 
 /* —— body + fonts —— */
@@ -31,13 +31,15 @@ body {
 /* header */
 .site-header {
   text-align: center;
-  padding-top: 40px;
-  margin-bottom: 6px;
+  padding-top: 36px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   gap: 8px;
+  /* subtle gold accent rule under header */
+  position: relative;
 }
 
 .site-title {
@@ -50,9 +52,20 @@ body {
 
 /* Logo sizing in header */
 .site-logo {
-  max-height: 56px;
+  max-height: 64px;
   width: auto;
   display: block;
+}
+
+/* decorative gold rule under the header */
+.site-header::after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 4px;
+  background: var(--loreal-gold);
+  border-radius: 2px;
+  margin-top: 6px;
 }
 
 /* chat window */
@@ -62,7 +75,7 @@ body {
 
 .chat-window {
   height: 360px;
-  border: 1px solid rgba(11, 11, 11, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   padding: 20px;
   font-size: 18px;
   line-height: 1.6;
@@ -159,7 +172,7 @@ body {
 }
 
 .chat-form button:hover {
-  background: var(--loreal-gold);
+  background: linear-gradient(180deg, var(--loreal-gold), #9a6f2f);
   color: var(--loreal-black);
   transform: translateY(-1px);
 }
