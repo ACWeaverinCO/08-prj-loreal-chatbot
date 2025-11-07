@@ -86,19 +86,52 @@ body {
   box-shadow: 0 6px 18px rgba(11, 11, 11, 0.06);
 }
 
-/* messages */
+/* messages (chat bubble layout) */
+.chat-window {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .msg {
-  margin-bottom: 14px;
-  line-height: 1.5;
+  margin-bottom: 0; /* spacing provided by gap on container */
+  line-height: 1.4;
+  word-wrap: break-word;
+  max-width: 72%;
+  padding: 10px 14px;
+  display: inline-block;
+  font-size: 16px;
 }
 
+/* User (right-aligned) bubble */
 .msg.user {
-  color: var(--loreal-black);
+  background: linear-gradient(180deg, var(--loreal-black), #0a0a0a);
+  color: #ffffff;
   font-weight: 600;
+  margin-left: auto; /* push to right */
+  margin-right: 6px;
+  border-radius: 16px 16px 4px 16px; /* subtle tail to the right */
+  text-align: right;
+  box-shadow: 0 6px 18px rgba(11, 11, 11, 0.12);
 }
 
+/* Assistant (left-aligned) bubble */
 .msg.ai {
+  background: var(--card-bg);
+  color: var(--loreal-black);
+  margin-right: auto; /* push to left */
+  margin-left: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px 16px 16px 4px; /* subtle tail to the left */
+}
+
+/* Loading placeholder stays subtle and non-animated */
+.msg.ai.loading {
+  opacity: 0.95;
+  font-style: italic;
   color: var(--loreal-muted);
+  background: linear-gradient(180deg, #fbfbfb, #f6f6f6);
+  border: 1px dashed rgba(0, 0, 0, 0.04);
 }
 
 /* Lightweight animation for AI replies */

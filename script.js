@@ -12,9 +12,57 @@ function appendMessage(text, cls = "ai") {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-// Initial greeting
+// Small helper to persist conversation state (messages + user name)
+function saveState() {
+  try {
+    const toSave = {
+      messages,
+    };
+    localStorage.setItem("chat_state", JSON.stringify(toSave));
+  } catch (e) {
+    console.warn("Could not save chat state:", e);
+  }
+}
+
+// Conversation & user state
+const MAX_HISTORY_MESSAGES = 20; // keep a bounded number of past turns to control token growth
+
+let userName = null;
+let messages = null;
+
+// Load saved state (if any)
+try {
+  const raw = localStorage.getItem("chat_state");
+  if (raw) {
+    const parsed = JSON.parse(raw);
+    // Don't restore a saved userName. We no longer prompt for or persist personal names.
+    messages = parsed.messages || null;
+  }
+} catch (e) {
+  console.warn("Could not parse saved chat state:", e);
+}
+
+const baseSystemPrompt = "You are a helpful product advisor.";
+
+function systemPromptFor(name) {
+  if (name)
+    return `${baseSystemPrompt} The user's name is ${name}. Remember details they share and keep responses friendly and concise.`;
+  return baseSystemPrompt;
+}
+
+// Ensure we have an initial messages array with a system prompt
+if (!Array.isArray(messages) || messages.length === 0) {
+  messages = [{ role: "system", content: systemPromptFor(userName) }];
+}
+
+// Initial greeting (only show if no prior assistant message saved)
 chatWindow.innerHTML = "";
-appendMessage("👋 Hello! How can I help you today?", "ai");
+if (!messages.some((m) => m.role === "assistant")) {
+  appendMessage("👋 Hello! How can I help you today?", "ai");
+}
+
+// keep state persisted when page is left or periodically
+window.addEventListener("beforeunload", saveState);
 
 /* Handle form submit */
 chatForm.addEventListener("submit", async (e) => {
@@ -34,11 +82,19 @@ chatForm.addEventListener("submit", async (e) => {
   chatWindow.appendChild(thinkingEl);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 
-  // Build messages array for the chat completion
-  const messages = [
-    { role: "system", content: "You are a helpful product advisor." },
-    { role: "user", content: userMessage },
-  ];
+  // NOTE: removed optional name prompt. We do not ask for or persist personal names.
+
+  // Append the user's message to the conversation history we keep
+  messages.push({ role: "user", content: userMessage });
+  // prune history to keep recent context while preserving the system message
+  const historyOnly = messages.slice(1); // exclude system for counting
+  if (historyOnly.length > MAX_HISTORY_MESSAGES * 2) {
+    // keep the latest N messages (roles alternate user/assistant, approx)
+    const keep = historyOnly.slice(-MAX_HISTORY_MESSAGES * 2);
+    messages = [messages[0], ...keep];
+  }
+  // persist state before the network call
+  saveState();
 
   // Config: how many tokens to allow for the model's reply.
   // Increase this if responses are getting cut off. Keep in mind model + prompt tokens count toward limits.
@@ -57,7 +113,7 @@ chatForm.addEventListener("submit", async (e) => {
       );
     }
 
-    // Send the messages to the Cloudflare Worker which proxies the OpenAI API.
+    // Send the messages (full conversation) to the Cloudflare Worker which proxies the OpenAI API.
     const workerResp = await fetch(WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -79,6 +135,15 @@ chatForm.addEventListener("submit", async (e) => {
       appendMessage("Sorry — I didn't get a response from the AI.", "ai");
       console.error("Worker/OpenAI response:", data);
     } else {
+      // add assistant reply to history and persist
+      messages.push({ role: "assistant", content: aiText });
+      // prune again to be safe
+      const historyOnlyAfter = messages.slice(1);
+      if (historyOnlyAfter.length > MAX_HISTORY_MESSAGES * 2) {
+        const keep = historyOnlyAfter.slice(-MAX_HISTORY_MESSAGES * 2);
+        messages = [messages[0], ...keep];
+      }
+      saveState();
       appendMessage(aiText, "ai");
     }
     userInput.value = "";
